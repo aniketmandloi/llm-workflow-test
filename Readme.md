@@ -1,203 +1,115 @@
-# AIFlow — Better-T-Stack Edition
+# llm-workflow-test
 
-> AI-assisted coding workflow for Bun + Hono + tRPC + TanStack Router + shadcn/ui + Better-Auth + Drizzle.
-> Claude owns the client. Codex owns the server. AGENTS.md is the brain both read.
+## Features
 
----
+- **TypeScript** - For type safety and improved developer experience
+- **Next.js** - Full-stack React framework
+- **React Native** - Build mobile apps using React
+- **Expo** - Tools for React Native development
+- **TailwindCSS** - Utility-first CSS for rapid UI development
+- **Shared UI package** - shadcn/ui primitives live in `packages/ui`
+- **Fastify** - Fast, low-overhead web framework
+- **tRPC** - End-to-end type-safe APIs
+- **Node.js** - Runtime environment
+- **Drizzle** - TypeScript-first ORM
+- **PostgreSQL** - Database engine
+- **Authentication** - Better-Auth
+- **Turborepo** - Optimized monorepo build system
 
-## Setup
+## Getting Started
+
+First, install the dependencies:
 
 ```bash
-# 1. Create your project
-bun create better-t-stack@latest my-app
-cd my-app
-
-# 2. Initialize AIFlow (put this repo in aiflow/ or run the script directly)
-bash aiflow/scripts/init.sh "My App Name"
-
-# 3. Fill in AGENTS.md > PROJECT IDENTITY
-# 4. Open .ai/prompts.md and copy the session start prompt
+pnpm install
 ```
 
----
+## Database Setup
 
-## The Stack (what each agent owns)
+This project uses PostgreSQL with Drizzle ORM.
 
-| Layer       | Agent      | Tech                        | Location                                 |
-| ----------- | ---------- | --------------------------- | ---------------------------------------- |
-| Routes + UI | **Claude** | TanStack Router + shadcn/ui | `packages/client/src/routes/`            |
-| tRPC client | **Claude** | `@trpc/react-query`         | `packages/client/src/lib/trpc.ts`        |
-| Auth client | **Claude** | Better-Auth client          | `packages/client/src/lib/auth-client.ts` |
-| tRPC server | **Codex**  | Hono + tRPC                 | `packages/server/src/routers/`           |
-| DB schema   | **Codex**  | Drizzle + libSQL            | `packages/server/src/db/schema.ts`       |
-| Auth server | **Codex**  | Better-Auth                 | `packages/server/src/lib/auth.ts`        |
+1. Make sure you have a PostgreSQL database set up.
+2. Update your `apps/server/.env` file with your PostgreSQL connection details.
 
----
+3. Apply the schema to your database:
 
-## Why tRPC Changes Everything
-
-With REST, you need:
-
-- Backend: define endpoint, write Pydantic/Zod schema, document shape
-- Frontend: manually type the response, keep in sync with backend
-- Both: update types when the API changes
-
-With tRPC in Better-T-Stack:
-
-- Codex writes the router with Zod input + return type
-- **Claude gets the types automatically** — zero manual typing
-- Change the router → TypeScript errors tell Claude exactly what to update
-
-This means `AGENTS.md` doesn't need a REST API contract table. The contract **is the TypeScript types**, enforced by the compiler.
-
----
-
-## New Project Flow
-
-```
-1. bun create better-t-stack@latest → bash init.sh
-2. Claude: architecture + AGENTS.md + task breakdown
-3. Codex: DB schema → bun db:push → tRPC routers
-4. Claude: client routes that call those procedures
-5. Both: integration check + error states
-6. Deploy: Vercel (client) + Cloudflare Workers (server)
+```bash
+pnpm run db:push
 ```
 
-See `templates/new-project-kickoff.md` for exact prompts.
+Then, run the development server:
 
----
-
-## Adding Features
-
-```
-1. Fill in templates/feature-workflow.md > STEP 1 (spec)
-2. Codex: schema change → db:push → new procedure
-3. Claude: new route/component that calls the procedure
-4. Integration check (types catch most bugs automatically)
+```bash
+pnpm run dev
 ```
 
----
+Open [http://localhost:3001](http://localhost:3001) in your browser to see the web application.
+Use the Expo Go app to run the mobile application.
+The API is running at [http://localhost:3000](http://localhost:3000).
 
-## The Context Rot Problem — Solved
+## UI Customization
 
-**Why it happens:** Agent doesn't know what exists, what patterns were chosen, what decisions were made.
+React web apps in this stack share shadcn/ui primitives through `packages/ui`.
 
-**Fix:** `AGENTS.md` is always read first. It contains:
+- Change design tokens and global styles in `packages/ui/src/styles/globals.css`
+- Update shared primitives in `packages/ui/src/components/*`
+- Adjust shadcn aliases or style config in `packages/ui/components.json` and `apps/web/components.json`
 
-- The tRPC router shape (so Claude knows what to call)
-- The DB schema (so Codex doesn't create duplicate tables)
-- Key decisions (so nothing gets re-litigated)
-- Known gotchas (so the same bug isn't hit twice)
+### Add more shared components
 
-**The ritual:**
+Run this from the project root to add more primitives to the shared UI package:
 
-```
-Session start → read AGENTS.md + session-log.md → plan → code
-Session end   → update AGENTS.md → write session-log entry
-```
-
-Two minutes of overhead. Hours of debugging saved.
-
----
-
-## Context Window Full?
-
-When Claude or Codex's context fills up:
-
-```
-Before we lose context:
-1. What's the exact state of what we just built?
-2. List every file we created/modified with its path
-3. What's the single next step?
-Write this as a session-log entry.
+```bash
+npx shadcn@latest add accordion dialog popover sheet table -c packages/ui
 ```
 
-Paste that entry at the top of `.ai/session-log.md`. Start a fresh context:
+Import shared components like this:
 
-```
-Read AGENTS.md and this session log entry: [paste]
-Continue from where we left off.
-```
-
-Zero lost.
-
----
-
-## Division of Labor — the Boundary
-
-The boundary is the tRPC router. Codex writes it. Claude calls it.
-
-**Codex writes:**
-
-```typescript
-// packages/server/src/routers/todos.ts
-export const todosRouter = router({
-  list: protectedProcedure
-    .input(z.object({ status: z.enum(["active", "done"]).optional() }))
-    .query(async ({ ctx, input }) => {
-      return db.select().from(todos).where(eq(todos.userId, ctx.user.id));
-    }),
-});
+```tsx
+import { Button } from "@llm-workflow-test/ui/components/button";
 ```
 
-**Claude calls it — zero type imports from server:**
+### Add app-specific blocks
 
-```typescript
-// packages/client/src/routes/todos/index.tsx
-const { data: todoList, isLoading } = trpc.todos.list.useQuery({
-  status: "active",
-});
-// TypeScript knows exactly what `todoList` looks like. No manual types.
-```
+If you want to add app-specific blocks instead of shared primitives, run the shadcn CLI from `apps/web`.
 
-That's the whole handoff. Clean, typed, no coordination overhead.
-
----
-
-## Ship Checklist
+## Project Structure
 
 ```
-[ ] bun --filter client typecheck  → 0 errors
-[ ] Core user flow works end-to-end
-[ ] Loading states on every tRPC call
-[ ] Error states on every tRPC call
-[ ] Auth redirects work (protected routes → /login)
-[ ] bun db:push run on production Turso DB
-[ ] Client env vars set in Vercel
-[ ] Server env vars set in Cloudflare Workers
-[ ] bun wrangler:deploy succeeded
-[ ] GET /health returns 200 from production URL
-[ ] Core flow works on mobile screen size
-```
-
----
-
-## Files Reference
-
-```
-aiflow/
-├── README.md                       ← You are here
-├── core/
-│   ├── AGENTS.md                   ← Template (init.sh fills this in)
-│   └── session-log.md              ← Template
-├── scripts/
-│   └── init.sh                     ← Run this to set up a new project
-└── templates/
-    ├── new-project-kickoff.md      ← Prompts for starting from scratch
-    └── feature-workflow.md         ← Prompts for adding features
-```
-
-In your project (after init):
-
-```
-[project]/
-├── AGENTS.md                       ← Gitignored. The brain.
-├── .ai/
-│   ├── session-log.md              ← Gitignored. Rolling memory.
-│   ├── decisions.md                ← Gitignored. The why.
-│   └── prompts.md                  ← Gitignored. Copy-paste prompts.
+llm-workflow-test/
+├── apps/
+│   ├── web/         # Frontend application (Next.js)
+│   ├── native/      # Mobile application (React Native, Expo)
+│   └── server/      # Backend API (Fastify, TRPC)
 ├── packages/
-│   ├── client/                     ← Claude
-│   └── server/                     ← Codex
-└── package.json
+│   ├── ui/          # Shared shadcn/ui components and styles
+│   ├── api/         # API layer / business logic
+│   ├── auth/        # Authentication configuration & logic
+│   └── db/          # Database schema & queries
 ```
+
+## Engineering Workflow
+
+This repo uses a spec-first AI-assisted workflow for feature delivery.
+
+- Repo rules live in [AGENTS.md](/Users/aniketmandloi/Desktop/Projects/llm-workflow-test/AGENTS.md)
+- Repo context lives in [\_docs](/Users/aniketmandloi/Desktop/Projects/llm-workflow-test/_docs)
+- Feature plans live in [\_specs](/Users/aniketmandloi/Desktop/Projects/llm-workflow-test/_specs)
+- Claude skills live in `.claude/skills/`
+- Codex skills live in `.agents/skills/`
+- Scaffolding helpers live in `scripts/` and `_templates/`
+
+For the end-to-end delivery process from idea to shipped feature, see [\_docs/project-delivery-workflow.md](/Users/aniketmandloi/Desktop/Projects/llm-workflow-test/_docs/project-delivery-workflow.md).
+
+## Available Scripts
+
+- `pnpm run dev`: Start all applications in development mode
+- `pnpm run build`: Build all applications
+- `pnpm run dev:web`: Start only the web application
+- `pnpm run dev:server`: Start only the server
+- `pnpm run check-types`: Check TypeScript types across all apps
+- `pnpm run dev:native`: Start the React Native/Expo development server
+- `pnpm run db:push`: Push schema changes to database
+- `pnpm run db:generate`: Generate database client/types
+- `pnpm run db:migrate`: Run database migrations
+- `pnpm run db:studio`: Open database studio UI

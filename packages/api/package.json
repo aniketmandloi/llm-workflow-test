@@ -1,0 +1,29 @@
+{
+  "name": "@llm-workflow-test/api",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@llm-workflow-test/auth": "workspace:*",
+    "@llm-workflow-test/db": "workspace:*",
+    "@llm-workflow-test/env": "workspace:*",
+    "@trpc/client": "catalog:",
+    "@trpc/server": "catalog:",
+    "@types/pg": "^8.16.0",
+    "better-auth": "catalog:",
+    "dotenv": "catalog:",
+    "drizzle-orm": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@llm-workflow-test/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}
